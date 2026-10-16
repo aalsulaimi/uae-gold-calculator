@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gold 21K">
+<title>UAE Gold Calculator</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --text: #1d1b16;
+    --muted: #6b665a;
+    --border: #e4dfd3;
+    --accent: #a07b17;
+    --accent-soft: #f4ead0;
+    --danger: #b3261e;
+    --ok: #2e7d32;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121110;
+      --surface: #1c1b19;
+      --text: #f2efe8;
+      --muted: #a39d90;
+      --border: #2f2d29;
+      --accent: #d9b44a;
+      --accent-soft: #2e2715;
+      --danger: #f2706a;
+      --ok: #7cc47f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { max-width: 440px; margin: 0 auto; }
+  h1 { font-size: 1.35rem; margin: 8px 0 2px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .rate-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .label { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+  .status { font-size: 0.8rem; color: var(--muted); margin-top: 6px; min-height: 1.2em; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--danger); }
+  button {
+    font: inherit; font-size: 0.85rem; font-weight: 600;
+    color: var(--accent); background: var(--accent-soft);
+    border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .input-wrap {
+    display: flex; align-items: center;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg); margin-top: 6px; padding: 0 12px;
+  }
+  .input-wrap:focus-within { border-color: var(--accent); }
+  .input-wrap input {
+    flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text);
+    font: inherit; font-size: 1.15rem; font-weight: 600; padding: 10px 0; outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .unit { color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
+  .rate-input input { font-size: 1.6rem; }
+  input[type=range] { width: 100%; margin: 12px 0 0; accent-color: var(--accent); }
+  .range-ends { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+  .error { color: var(--danger); font-size: 0.8rem; margin-top: 4px; min-height: 1em; }
+  .rows { margin: 0; }
+  .row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .row dt { color: var(--muted); }
+  .row dd { margin: 0; font-weight: 600; text-align: right; }
+  .total {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    margin-top: 12px; padding: 14px; border-radius: 10px; background: var(--accent-soft);
+  }
+  .total span:first-child { font-weight: 700; }
+  .total strong { font-size: 1.5rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .foot { color: var(--muted); font-size: 0.75rem; text-align: center; margin-top: 18px; }
+  .foot a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>UAE Gold Calculator</h1>
+  <p class="sub">21K jewelry price · gold + service charge + 5% VAT</p>
+
+  <section class="card">
+    <div class="rate-head">
+      <span class="label">21K gold rate</span>
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+    <div class="input-wrap rate-input">
+      <input id="rate" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="21K gold rate in AED per gram">
+      <span class="unit">AED / g</span>
+    </div>
+    <div id="status" class="status" role="status"></div>
+  </section>
+
+  <section class="card">
+    <div class="field">
+      <label class="label" for="weight">Weight</label>
+      <div class="input-wrap">
+        <input id="weight" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00">
+        <span class="unit">grams</span>
+      </div>
+      <div id="weightErr" class="error"></div>
+    </div>
+    <div class="field">
+      <label class="label" for="service">Service charge</label>
+      <div class="input-wrap">
+        <input id="service" type="text" inputmode="decimal" autocomplete="off" value="25">
+        <span class="unit">AED / g</span>
+      </div>
+      <input id="serviceRange" type="range" min="20" max="35" step="0.5" value="25" aria-label="Service charge slider">
+      <div class="range-ends"><span>20</span><span>35</span></div>
+      <div id="serviceErr" class="error"></div>
+    </div>
+  </section>
+
+  <section class="card" aria-live="polite">
+    <dl class="rows">
+      <div class="row"><dt>Gold value</dt><dd id="outGold">—</dd></div>
+      <div class="row"><dt>Service charge</dt><dd id="outService">—</dd></div>
+      <div class="row"><dt>Subtotal</dt><dd id="outSubtotal">—</dd></div>
+      <div class="row"><dt>VAT (5%)</dt><dd id="outVat">—</dd></div>
+    </dl>
+    <div class="total"><span>Final total</span><strong id="outTotal">—</strong></div>
+  </section>
+
+  <p class="foot">Live rate from <a href="https://uaegoldprices.com/" target="_blank" rel="noopener">uaegoldprices.com</a>.
+    You can also type the rate in yourself.</p>
+</main>
+
+<script>
+(() => {
+  const SOURCE_URL = "https://uaegoldprices.com/";
+  const SERVICE_MIN = 20, SERVICE_MAX = 35, VAT_RATE = 0.05;
+
+  // The site doesn't send CORS headers, so a browser page can't read it directly.
+  // Try a direct fetch first (works if that ever changes), then public CORS proxies.
+  // Free proxies are flaky, so each source returns the page HTML and we retry a round.
+  const enc = encodeURIComponent(SOURCE_URL);
+  const SOURCES = [
+    () => fetchText(SOURCE_URL, 6000),
+    () => fetchText("https://r.jina.ai/" + SOURCE_URL, 15000),
+    () => fetchText("https://api.allorigins.win/raw?url=" + enc + "&t=" + Date.now(), 15000),
+    async () => JSON.parse(await fetchText("https://api.allorigins.win/get?url=" + enc + "&t=" + Date.now(), 15000)).contents,
+    () => fetchText("https://api.codetabs.com/v1/proxy?quest=" + enc, 15000),
+  ];
+
+  // The site is in Arabic. The daily table has a row labelled
+  // "سعر جرام الذهب عيار 21" (price of a gram of 21-karat gold), followed by
+  // the AED price cell and then the USD price cell.
+  const GRAM_WORD = "جرام";
+  const KARAT_21_RE = /عيار\s*21(?!\d)/;
+
+  const $ = id => document.getElementById(id);
+  const rateEl = $("rate"), weightEl = $("weight"), serviceEl = $("service"), rangeEl = $("serviceRange");
+  const statusEl = $("status"), refreshBtn = $("refresh");
+
+  // Accepts either the raw HTML (table cells) or the plain-text rendering from
+  // r.jina.ai (one value per line) - both list label, AED price, USD price in order.
+  function parse21kRate(page) {
+    let cells = [...page.matchAll(/<div class="divTableCell">([\s\S]*?)<\/div>/g)].map(m => m[1]);
+    if (!cells.length) cells = page.split("\n");
+    cells = cells.map(c => c.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()).filter(Boolean);
+    for (let i = 0; i < cells.length - 1; i++) {
+      if (cells[i].includes(GRAM_WORD) && KARAT_21_RE.test(cells[i])) {
+        const rate = Number(cells[i + 1].replace(/,/g, ""));
+        // Sanity check so a layout change doesn't silently produce nonsense.
+        if (rate > 50 && rate < 5000) return rate;
+      }
+    }
+    return null;
+  }
+
+  async function fetchText(url, ms) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), ms);
+    try {
+      const res = await fetch(url, { signal: ctl.signal, cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return await res.text();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function fetch21kRate() {
+    // Race every source in parallel and take the first valid rate; one retry round.
+    for (let round = 0; round < 2; round++) {
+      try {
+        return await Promise.any(SOURCES.map(async source => {
+          const rate = parse21kRate(await source());
+          if (!rate) throw new Error("no rate");
+          return rate;
+        }));
+      } catch (e) { /* all failed this round */ }
+    }
+    throw new Error("unavailable");
+  }
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  async function loadRate() {
+    refreshBtn.disabled = true;
+    setStatus("Fetching live rate…");
+    try {
+      const rate = await fetch21kRate();
+      rateEl.value = rate.toFixed(2);
+      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      setStatus("● Live · updated " + time, "ok");
+    } catch (e) {
+      setStatus("Couldn't fetch the live rate. Check uaegoldprices.com and type it in above.", "err");
+    } finally {
+      refreshBtn.disabled = false;
+      recalc();
+    }
+  }
+
+  // Accept "10,5" as well as "10.5" for locales that use a decimal comma.
+  const num = s => {
+    const t = String(s).trim().replace(",", ".");
+    return t === "" ? NaN : Number(t);
+  };
+
+  const fmt = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = v => fmt.format(Math.round((v + Number.EPSILON) * 100) / 100) + " AED";
+
+  function calculateGoldPrice(weight, serviceCharge, rate) {
+    const goldValue = weight * rate;
+    const totalServiceCharge = weight * serviceCharge;
+    const subtotal = goldValue + totalServiceCharge;
+    const vat = subtotal * VAT_RATE;
+    return { goldValue, serviceCharge: totalServiceCharge, subtotal, vat, total: subtotal + vat };
+  }
+
+  function recalc() {
+    const rate = num(rateEl.value), weight = num(weightEl.value), service = num(serviceEl.value);
+
+    const weightOk = Number.isFinite(weight) && weight > 0;
+    const serviceOk = Number.isFinite(service) && service >= SERVICE_MIN && service <= SERVICE_MAX;
+    const rateOk = Number.isFinite(rate) && rate > 0;
+
+    $("weightErr").textContent = weightEl.value.trim() && !weightOk ? "Enter a positive weight in grams." : "";
+    $("serviceErr").textContent = serviceOk ? "" : `Must be between ${SERVICE_MIN} and ${SERVICE_MAX} AED per gram.`;
+
+    const ids = ["outGold", "outService", "outSubtotal", "outVat", "outTotal"];
+    if (!(weightOk && serviceOk && rateOk)) {
+      ids.forEach(id => $(id).textContent = "—");
+      return;
+    }
+    const r = calculateGoldPrice(weight, service, rate);
+    $("outGold").textContent = money(r.goldValue);
+    $("outService").textContent = money(r.serviceCharge);
+    $("outSubtotal").textContent = money(r.subtotal);
+    $("outVat").textContent = money(r.vat);
+    $("outTotal").textContent = money(r.total);
+  }
+
+  serviceEl.addEventListener("input", () => {
+    const v = num(serviceEl.value);
+    if (Number.isFinite(v)) rangeEl.value = Math.min(SERVICE_MAX, Math.max(SERVICE_MIN, v));
+    recalc();
+  });
+  rangeEl.addEventListener("input", () => { serviceEl.value = rangeEl.value; recalc(); });
+  weightEl.addEventListener("input", recalc);
+  rateEl.addEventListener("input", () => { setStatus("Using the rate you typed in"); recalc(); });
+  refreshBtn.addEventListener("click", loadRate);
+
+  loadRate();
+})();
+</script>
+</body>
+</html>
